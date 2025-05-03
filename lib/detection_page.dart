@@ -241,6 +241,10 @@ class _DetectionPageState extends State<DetectionPage> {
       final inputs = {'images': inputOrt};
       final runOptions = OrtRunOptions();
       final outputs = await _session?.runAsync(runOptions, inputs) ?? [];
+      print('輸出數量: ${outputs.length}');
+      for (int i = 0; i < outputs.length; i++) {
+        print('輸出 $i 類型: ${outputs[i]?.runtimeType}');
+      }
       inputOrt.release();
       runOptions.release();
       return outputs;
@@ -252,28 +256,49 @@ class _DetectionPageState extends State<DetectionPage> {
 
   List<Map<String, dynamic>> _postProcess(List<OrtValue?> outputs) {
     try {
-      if (outputs.isEmpty || outputs[0] == null) return [];
-      final outputTensor = outputs[0]!.value as List;
+      if (outputs.isEmpty || outputs[0] == null) {
+        print('無有效輸出數據');
+        return [];
+      }
+      if (outputs[0] is! OrtValueTensor) {
+        print('輸出不是張量，類型: ${outputs[0]?.runtimeType}');
+        return [];
+      }
+      final outputTensor = outputs[0] as OrtValueTensor;
+      final data = outputTensor.value as List<List<List<double>>>;
+      if (data.isEmpty || data[0].isEmpty) {
+        print('輸出數據為空');
+        return [];
+      }
       final detections = <Map<String, dynamic>>[];
-      final numDetections = 8400;
-      final numAttributes = 84;
-      for (int i = 0; i < numDetections; i++) {
-        final det = outputTensor.sublist(
-          i * numAttributes,
-          (i + 1) * numAttributes,
-        );
-        final confidence = det[4];
+      final batchData = data[0]; // 假設 batch_size = 1
+      print('檢測數量: ${batchData.length}');
+      for (var detection in batchData) {
+        if (detection.length < 5) {
+          print('檢測屬性不足: ${detection.length} < 5');
+          continue;
+        }
+        final confidence = detection[4];
         if (confidence > 0.5) {
+          final box = detection.sublist(0, 4);
+          final classProbs = detection.sublist(5);
+          if (classProbs.isEmpty) {
+            print('類別概率為空');
+            continue;
+          }
+          final maxClassProb = classProbs.reduce((a, b) => a > b ? a : b);
+          final classIndex = classProbs.indexOf(maxClassProb);
           detections.add({
-            'box': det.sublist(0, 4),
+            'box': box,
             'confidence': confidence,
-            'class': det
-                .sublist(5)
-                .indexOf(det.sublist(5).reduce((a, b) => a > b ? a : b)),
+            'class': classIndex,
           });
         }
       }
       return detections;
+    } catch (e) {
+      print('後處理失敗: $e');
+      return [];
     } finally {
       for (var element in outputs) {
         element?.release();
