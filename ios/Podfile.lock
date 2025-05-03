@@ -1,0 +1,54 @@
+PODS:
+  - camera_avfoundation (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+  - onnxruntime (0.0.1):
+    - Flutter
+    - onnxruntime-objc (= 1.15.1)
+  - onnxruntime-c (1.15.1)
+  - onnxruntime-objc (1.15.1):
+    - onnxruntime-objc/Core (= 1.15.1)
+  - onnxruntime-objc/Core (1.15.1):
+    - onnxruntime-c (= 1.15.1)
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - permission_handler_apple (9.3.0):
+    - Flutter
+
+DEPENDENCIES:
+  - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/ios`)
+  - Flutter (from `Flutter`)
+  - onnxruntime (from `.symlinks/plugins/onnxruntime/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+
+SPEC REPOS:
+  trunk:
+    - onnxruntime-c
+    - onnxruntime-objc
+
+EXTERNAL SOURCES:
+  camera_avfoundation:
+    :path: ".symlinks/plugins/camera_avfoundation/ios"
+  Flutter:
+    :path: Flutter
+  onnxruntime:
+    :path: ".symlinks/plugins/onnxruntime/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
+
+SPEC CHECKSUMS:
+  camera_avfoundation: be3be85408cd4126f250386828e9b1dfa40ab436
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  onnxruntime: 2ab1957eb029c71d47f7bb35cc4efc9f0d297828
+  onnxruntime-c: ebdcfd8650bcbd10121c125262f99dea681b92a3
+  onnxruntime-objc: ae7acec7a3d03eaf072d340afed7a35635c1c2a6
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
+
+PODFILE CHECKSUM: da4c47ea6a9c7e8e9083d24e698793d9e93b49ba
+
+COCOAPODS: 1.16.2
