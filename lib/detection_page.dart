@@ -199,19 +199,21 @@ class _DetectionPageState extends State<DetectionPage> {
       appBar: AppBar(title: const Text('物件辨識')),
       body: Stack(
         children: [
-          CameraPreview(_cameraController!),
+          // 使用Center包裹CameraPreview以保持其原始縱橫比
+          Center(child: CameraPreview(_cameraController!)),
+          // 將CustomPaint放在CameraPreview之上確保疊加
           if (_isDetecting)
-            CustomPaint(
-              painter: DetectionPainter(
-                _detections,
-                // 使用相機實際尺寸，而不是固定值
-                Size(
-                  _cameraController!.value.previewSize?.height ?? 0,
-                  _cameraController!.value.previewSize?.width ?? 0,
+            Positioned.fill(
+              child: CustomPaint(
+                painter: DetectionPainter(
+                  _detections,
+                  Size(
+                    _cameraController!.value.previewSize?.height ?? 0,
+                    _cameraController!.value.previewSize?.width ?? 0,
+                  ),
+                  MediaQuery.of(context).size,
                 ),
-                MediaQuery.of(context).size,
               ),
-              child: Container(),
             ),
           Positioned(
             top: 10,
