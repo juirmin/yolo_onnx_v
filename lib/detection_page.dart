@@ -215,12 +215,24 @@ class _DetectionPageState extends State<DetectionPage> {
                 ),
               ),
             ),
-          Positioned(
-            top: 10,
-            left: 10,
-            child: Text(
-              'FPS: $_fps',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+          // FPS 計數器位置修復
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4.0,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(4.0),
+                ),
+                child: Text(
+                  'FPS: $_fps',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
             ),
           ),
           Align(

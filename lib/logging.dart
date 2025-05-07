@@ -23,7 +23,7 @@ class Logger {
     final receivePort = ReceivePort();
     sendPort.send(receivePort.sendPort);
     receivePort.listen((message) {
-      print(message);
+      // print(message);
     });
   }
 
