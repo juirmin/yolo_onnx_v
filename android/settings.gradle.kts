@@ -15,9 +15,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
+    // id("org.jetbrains.kotlinx:kotlinx-coroutines-core") version "1.5.2"
     id("com.android.application") version "8.7.0" apply false
     id("org.jetbrains.kotlin.android") version "1.8.22" apply false
 }

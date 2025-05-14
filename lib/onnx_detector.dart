@@ -17,93 +17,18 @@ class OnnxDetector {
 
   /// COCO資料集的80個類別
   final List<String> _cocoClasses = [
-    'person',
-    'bicycle',
-    'car',
-    'motorcycle',
-    'airplane',
-    'bus',
-    'train',
-    'truck',
-    'boat',
-    'traffic light',
-    'fire hydrant',
-    'stop sign',
-    'parking meter',
-    'bench',
-    'bird',
-    'cat',
-    'dog',
-    'horse',
-    'sheep',
-    'cow',
-    'elephant',
-    'bear',
-    'zebra',
-    'giraffe',
-    'backpack',
-    'umbrella',
-    'handbag',
-    'tie',
-    'suitcase',
-    'frisbee',
-    'skis',
-    'snowboard',
-    'sports ball',
-    'kite',
-    'baseball bat',
-    'baseball glove',
-    'skateboard',
-    'surfboard',
-    'tennis racket',
-    'bottle',
-    'wine glass',
-    'cup',
-    'fork',
-    'knife',
-    'spoon',
-    'bowl',
-    'banana',
-    'apple',
-    'sandwich',
-    'orange',
-    'broccoli',
-    'carrot',
-    'hot dog',
-    'pizza',
-    'donut',
-    'cake',
-    'chair',
-    'couch',
-    'potted plant',
-    'bed',
-    'dining table',
-    'toilet',
-    'tv',
-    'laptop',
-    'mouse',
-    'remote',
-    'keyboard',
-    'cell phone',
-    'microwave',
-    'oven',
-    'toaster',
-    'sink',
-    'refrigerator',
-    'book',
-    'clock',
-    'vase',
-    'scissors',
-    'teddy bear',
-    'hair drier',
-    'toothbrush',
+    'nail',
+    'fifty_coin',
+    'five_coin',
+    'one_coin',
+    'ten_coin',
   ];
 
   /// 載入ONNX模型
   Future<void> loadModel() async {
     try {
       OrtEnv.instance.init();
-      const assetFileName = 'assets/models/yolo11n320nms.onnx';
+      const assetFileName = 'assets/models/yolo11n320nailsdete1229.onnx';
       final rawAssetFile = await rootBundle.load(assetFileName);
       final bytes = rawAssetFile.buffer.asUint8List();
       _session = OrtSession.fromBuffer(
@@ -128,15 +53,16 @@ class OnnxDetector {
       img.Image rgbImage;
       if (image.format.group == ImageFormatGroup.yuv420) {
         rgbImage = _convertYUV420ToRGB(image);
+        // print('YUV420格式圖像');
       } else if (image.format.group == ImageFormatGroup.bgra8888) {
         rgbImage = _convertBGRA8888ToRGB(image);
+        // print('BGRA8888格式圖像');
       } else {
         throw Exception('Unsupported image format');
       }
 
       // 計算輸入圖像的最大邊長
       final maxDim = max(originalWidth, originalHeight);
-      img.copyResize(rgbImage, width: _modelInputSize, height: _modelInputSize);
       // 計算縮放因子 (與C++中的x_factor和y_factor相同)
       final xFactor = originalWidth / _modelInputSize;
       final yFactor = originalHeight / _modelInputSize;
@@ -172,41 +98,39 @@ class OnnxDetector {
 
   /// 將YUV420格式圖像轉換為RGB格式
   img.Image _convertYUV420ToRGB(CameraImage image) {
-    final width = image.width;
-    final height = image.height;
-    final yPlane = image.planes[0];
-    final uPlane = image.planes[1];
-    final vPlane = image.planes[2];
-    final yRowStride = yPlane.bytesPerRow;
-    final yPixelStride = yPlane.bytesPerPixel ?? 1;
-    final uvRowStride = uPlane.bytesPerRow;
-    final uvPixelStride = uPlane.bytesPerPixel ?? 1;
-    final output = img.Image(width: width, height: height);
-
-    for (int h = 0; h < height; h++) {
-      for (int w = 0; w < width; w++) {
-        final int uvh = (h / 2).floor();
-        final int uvw = (w / 2).floor();
-        final int yIndex = (h * yRowStride) + (w * yPixelStride);
-        final int uIndex = (uvh * uvRowStride) + (uvw * uvPixelStride);
-        final int vIndex = (uvh * uvRowStride) + (uvw * uvPixelStride);
-        if (yIndex >= yPlane.bytes.length ||
-            uIndex >= uPlane.bytes.length ||
-            vIndex >= vPlane.bytes.length) {
-          continue;
-        }
-        final int y = yPlane.bytes[yIndex] & 0xFF;
-        final int u = uPlane.bytes[uIndex] & 0xFF;
-        final int v = vPlane.bytes[vIndex] & 0xFF;
-        int r = (y + 1.402 * (v - 128)).round().clamp(0, 255);
-        int g = (y - 0.344 * (u - 128) - 0.714 * (v - 128)).round().clamp(
-          0,
-          255,
-        );
-        int b = (y + 1.772 * (u - 128)).round().clamp(0, 255);
-        output.setPixelRgb(w, h, r, g, b);
+    final imageWidth = image.width;
+    final imageHeight = image.height;
+    // print('image: ${image.width}, ${image.height}');
+    final yBuffer = image.planes[0].bytes;
+    final uBuffer = image.planes[1].bytes;
+    final vBuffer = image.planes[2].bytes;
+    final int yRowStride = image.planes[0].bytesPerRow;
+    final int yPixelStride = image.planes[0].bytesPerPixel!;
+    final int uvRowStride = image.planes[1].bytesPerRow;
+    final int uvPixelStride = image.planes[1].bytesPerPixel!;
+    // Create the image with swapped width and height to account for rotation
+    final output = img.Image(width: imageHeight, height: imageWidth);
+    for (int h = 0; h < imageHeight; h++) {
+      int uvh = (h / 2).floor();
+      for (int w = 0; w < imageWidth; w++) {
+        int uvw = (w / 2).floor();
+        final yIndex = (h * yRowStride) + (w * yPixelStride);
+        final int y = yBuffer[yIndex];
+        final int uvIndex = (uvh * uvRowStride) + (uvw * uvPixelStride);
+        final int u = uBuffer[uvIndex];
+        final int v = vBuffer[uvIndex];
+        int r = (y + v * 1436 / 1024 - 179).round();
+        int g = (y - u * 46549 / 131072 + 44 - v * 93604 / 131072 + 91).round();
+        int b = (y + u * 1814 / 1024 - 227).round();
+        r = r.clamp(0, 255);
+        g = g.clamp(0, 255);
+        b = b.clamp(0, 255);
+        // Set the pixel with rotated coordinates
+        output.setPixelRgb(imageHeight - h - 1, w, r, g, b);
       }
     }
+    // print('output: ${output.width}, ${output.height}');
+    // img.resize(output, width: imageWidth, height: imageHeight);
     return output;
   }
 
@@ -317,7 +241,7 @@ class OnnxDetector {
                 }
               }
 
-              final confidenceThreshold = 0.25;
+              final confidenceThreshold = 0.7;
               if (maxScore >= confidenceThreshold) {
                 final cx = (batch0[0][i] as num).toDouble();
                 final cy = (batch0[1][i] as num).toDouble();
@@ -393,8 +317,6 @@ class OnnxDetector {
     boxes.sort((a, b) => b.confidence.compareTo(a.confidence));
     final List<Detection> selected = [];
     final Set<int> suppressed = {};
-
-    // NMS閾值與C++代碼中的0.45一致
     final nmsThreshold = 0.45;
 
     for (int i = 0; i < boxes.length; i++) {

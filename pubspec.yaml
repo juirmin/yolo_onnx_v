@@ -28,3 +28,5 @@ flutter:
     - assets/models/yolo11n320.onnx
     - assets/models/yolo11n320nms.onnx
     - assets/models/yolov8n320.onnx
+    - assets/models/yolo11n320nailsdete1229.onnx
+    - assets/models/yolo11n320seg.onnx

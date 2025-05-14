@@ -9,6 +9,8 @@ import 'logging.dart';
 import 'onnx_detector.dart';
 import 'detection_painter.dart';
 import 'models.dart';
+import 'package:image/image.dart' as img;
+import 'dart:typed_data';
 
 class DetectionPage extends StatefulWidget {
   const DetectionPage({super.key});
@@ -64,7 +66,7 @@ class _DetectionPageState extends State<DetectionPage> {
       }
       _cameraController = CameraController(
         cameras![0],
-        ResolutionPreset.medium,
+        Platform.isAndroid ? ResolutionPreset.medium : ResolutionPreset.medium,
         enableAudio: false,
         imageFormatGroup:
             Platform.isAndroid
@@ -285,6 +287,99 @@ class ImagePreviewPage extends StatelessWidget {
 
   const ImagePreviewPage({super.key, required this.images});
 
+  // Function to convert File to img.Image
+  Future<img.Image?> _convertToImgImage(String imagePath) async {
+    try {
+      final file = File(imagePath);
+      final bytes = await file.readAsBytes();
+      final decodedImage = img.decodeImage(bytes);
+      if (decodedImage == null) {
+        throw Exception('Failed to decode image');
+      }
+      return decodedImage;
+    } catch (e) {
+      print('Error converting image: $e');
+      return null;
+    }
+  }
+
+  // Function to process img.Image with simulated delay
+  Future<img.Image?> _processImage(String imagePath) async {
+    final rgbImage = await _convertToImgImage(imagePath);
+    if (rgbImage == null) return null;
+
+    // Simulate processing time (e.g., 2 seconds)
+    // await Future.delayed(const Duration(seconds: 2));
+
+    // Example processing: Convert to grayscale (replace with your processing logic)
+    final processedImage = rgbImage;
+
+    return processedImage;
+  }
+
+  // Convert img.Image to Uint8List for display
+  Uint8List _imgImageToUint8List(img.Image image) {
+    return Uint8List.fromList(img.encodeJpg(image));
+  }
+
+  void _showFullScreenImage(BuildContext context, String imagePath) async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+
+    // Process the image
+    final processedImage = await _processImage(imagePath);
+
+    // Close loading dialog
+    Navigator.of(context).pop();
+
+    if (processedImage == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to process image')));
+      return;
+    }
+
+    // Convert processed image to Uint8List for display
+    final imageBytes = _imgImageToUint8List(processedImage);
+
+    // Show full-screen processed image
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              // Display processed image
+              Center(child: Image.memory(imageBytes, fit: BoxFit.contain)),
+              // Right-top close button
+              Positioned(
+                right: 16,
+                top: 16,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ).then((_) {
+      // Processed image is available for further use
+      print('Processed img.Image displayed: $imagePath');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -292,10 +387,15 @@ class ImagePreviewPage extends StatelessWidget {
       body: GridView.builder(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
         ),
         itemCount: images.length,
         itemBuilder: (context, index) {
-          return Image.file(File(images[index]));
+          return GestureDetector(
+            onTap: () => _showFullScreenImage(context, images[index]),
+            child: Image.file(File(images[index]), fit: BoxFit.cover),
+          );
         },
       ),
     );

@@ -43,3 +43,10 @@ android {
 flutter {
     source = "../.."
 }
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2")
+    // implementation("io.github.crow-misia.libyuv:libyuv-android:0.25.0") 
+    // implementation("com.github.jenly1314:libyuv:1.0.0")
+    implementation("com.github.jenly1314:libyuv:1.0.0")
+}
