@@ -16,6 +16,7 @@ dependencies:
   path_provider: ^2.0.11
   path: ^1.8.0
   image: ^4.5.4
+  loredart_tensor: ^1.0.0
 
 dev_dependencies:
   flutter_test:
@@ -30,3 +31,4 @@ flutter:
     - assets/models/yolov8n320.onnx
     - assets/models/yolo11n320nailsdete1229.onnx
     - assets/models/yolo11n320seg.onnx
+    - assets/models/yolo11nseg640nails.onnx

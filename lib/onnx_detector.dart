@@ -61,8 +61,6 @@ class OnnxDetector {
         throw Exception('Unsupported image format');
       }
 
-      // 計算輸入圖像的最大邊長
-      final maxDim = max(originalWidth, originalHeight);
       // 計算縮放因子 (與C++中的x_factor和y_factor相同)
       final xFactor = originalWidth / _modelInputSize;
       final yFactor = originalHeight / _modelInputSize;

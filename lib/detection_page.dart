@@ -11,6 +11,7 @@ import 'detection_painter.dart';
 import 'models.dart';
 import 'package:image/image.dart' as img;
 import 'dart:typed_data';
+import 'segonnx.dart';
 
 class DetectionPage extends StatefulWidget {
   const DetectionPage({super.key});
@@ -35,6 +36,7 @@ class _DetectionPageState extends State<DetectionPage> {
   FPSHandler _fpsHandler = FPSHandler();
   Logger _logger = Logger();
   OnnxDetector _onnxDetector = OnnxDetector();
+  OnnxSegmenter _onnxSegmenter = OnnxSegmenter();
   int _fps = 0;
 
   @override
@@ -42,6 +44,7 @@ class _DetectionPageState extends State<DetectionPage> {
     super.initState();
     _initCamera();
     _onnxDetector.loadModel();
+    _onnxSegmenter.loadModel();
     _logger.setup();
     _fpsHandler.start((fps) {
       setState(() {
@@ -79,6 +82,29 @@ class _DetectionPageState extends State<DetectionPage> {
       if (mounted) setState(() {});
     } catch (e) {
       _logger.log('相機初始化失敗: $e');
+    }
+  }
+
+  void _handleTapToFocus(TapDownDetails details, Size previewSize) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
+    try {
+      // Normalize tap coordinates to [0, 1] range
+      final x = details.localPosition.dx / previewSize.width;
+      final y = details.localPosition.dy / previewSize.height;
+
+      // Ensure coordinates are within valid range
+      final normalizedX = x.clamp(0.0, 1.0);
+      final normalizedY = y.clamp(0.0, 1.0);
+
+      // Set focus point and trigger auto-focus
+      await _cameraController!.setFocusPoint(Offset(normalizedX, normalizedY));
+      await _cameraController!.setFocusMode(FocusMode.auto);
+      _logger.log('對焦點設為: ($normalizedX, $normalizedY)');
+    } catch (e) {
+      _logger.log('對焦失敗: $e');
     }
   }
 
@@ -175,7 +201,11 @@ class _DetectionPageState extends State<DetectionPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ImagePreviewPage(images: _capturedImages),
+        builder:
+            (context) => ImagePreviewPage(
+              images: _capturedImages,
+              onnxSegmenter: _onnxSegmenter,
+            ),
       ),
     );
   }
@@ -184,6 +214,7 @@ class _DetectionPageState extends State<DetectionPage> {
   void dispose() {
     _cameraController?.dispose();
     _onnxDetector.dispose();
+    // _onnxSegmenter.dispose();
     _fpsHandler.stop();
     super.dispose();
   }
@@ -202,7 +233,19 @@ class _DetectionPageState extends State<DetectionPage> {
       body: Stack(
         children: [
           // 使用Center包裹CameraPreview以保持其原始縱橫比
-          Center(child: CameraPreview(_cameraController!)),
+          Center(
+            child: GestureDetector(
+              onTapDown: (details) {
+                // Get the size of the CameraPreview widget
+                final renderBox = context.findRenderObject() as RenderBox?;
+                if (renderBox != null) {
+                  final previewSize = renderBox.size;
+                  _handleTapToFocus(details, previewSize);
+                }
+              },
+              child: CameraPreview(_cameraController!),
+            ),
+          ),
           // 將CustomPaint放在CameraPreview之上確保疊加
           if (_isDetecting)
             Positioned.fill(
@@ -284,9 +327,13 @@ class FrameThrottler {
 
 class ImagePreviewPage extends StatelessWidget {
   final List<String> images;
+  final OnnxSegmenter onnxSegmenter;
 
-  const ImagePreviewPage({super.key, required this.images});
-
+  const ImagePreviewPage({
+    super.key,
+    required this.images,
+    required this.onnxSegmenter,
+  });
   // Function to convert File to img.Image
   Future<img.Image?> _convertToImgImage(String imagePath) async {
     try {
@@ -312,7 +359,7 @@ class ImagePreviewPage extends StatelessWidget {
     // await Future.delayed(const Duration(seconds: 2));
 
     // Example processing: Convert to grayscale (replace with your processing logic)
-    final processedImage = rgbImage;
+    final processedImage = onnxSegmenter.detect(rgbImage);
 
     return processedImage;
   }
